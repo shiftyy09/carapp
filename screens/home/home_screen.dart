@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../vehicles/vehicle_list_screen.dart';
+import '../consumption/consumption_calculator_screen.dart';
+import '../maintenance/maintenance_reminder_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -8,21 +10,56 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final menuItems = [
+    final List<Map<String, dynamic>> menuItems = [
       {
         'icon': Icons.directions_car,
         'title': 'Járműveim',
-        'subtitle': 'Autók listája'
+        'subtitle': 'Autók listája',
+        'onTap': () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const VehicleListScreen()),
+          );
+        },
       },
       {
         'icon': Icons.event_note,
         'title': 'Szerviz időpontok',
-        'subtitle': 'Jövőbeli események'
+        'subtitle': 'Jövőbeli események',
+        'onTap': () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Szerviz időpontok fejlesztés alatt')),
+          );
+        }
+      },
+      {
+        'icon': Icons.calculate_rounded,
+        'title': 'Fogyasztás kalkulátor',
+        'subtitle': 'Út költség kalkulátor',
+        'onTap': () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ConsumptionCalculatorScreen()),
+          );
+        },
+      },
+      {
+        'icon': Icons.build_circle,
+        'title': 'Karbantartási emlékeztető',
+        'subtitle': 'Olajcsere, vezérlés és műszaki időben',
+        'onTap': () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const MaintenanceReminderScreen()),
+          );
+        },
       },
       {
         'icon': Icons.settings,
         'title': 'Beállítások',
-        'subtitle': 'App személyre szabása'
+        'subtitle': 'App személyre szabása',
+        'onTap': () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Beállítások fejlesztés alatt')),
+          );
+        }
       },
     ];
 
@@ -31,22 +68,25 @@ class HomeScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
         children: [
-          // Alkalmazás logó vagy cím
-          Padding(
-            padding: const EdgeInsets.only(bottom: 32.0),
-            child: Center(
-              child: Text(
-                'Olajfolt',
-                style: TextStyle(
-                  color: accentOrange,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
+          Center(
+            child: Image.asset(
+              'assets/images/olajfoltiras.png',
+              width: 250,
+              fit: BoxFit.contain,
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Center(
+            child: Text(
+              'Szerviz-napló',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 18,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ),
-
-          // Menüelemek
+          const SizedBox(height: 32),
           ...menuItems.map((item) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 24.0),
@@ -75,31 +115,11 @@ class HomeScreen extends StatelessWidget {
                     item['subtitle'] as String,
                     style: TextStyle(color: Colors.orange[200]),
                   ),
-                  trailing:
-                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70),
-                  onTap: () {
-                    switch (item['title']) {
-                      case 'Járműveim':
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const VehicleListScreen(),
-                          ),
-                        );
-                        break;
-                      case 'Szerviz időpontok':
-                      // TODO: implement future events screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Szerviz időpontok fejlesztés alatt')),
-                        );
-                        break;
-                      case 'Beállítások':
-                      // TODO: implement settings
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Beállítások fejlesztés alatt')),
-                        );
-                        break;
-                    }
-                  },
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white70,
+                  ),
+                  onTap: item['onTap'] as VoidCallback,
                 ),
               ),
             );

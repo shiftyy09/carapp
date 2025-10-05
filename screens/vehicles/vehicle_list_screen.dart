@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:car_maintenance_app/core/database/database_helper.dart';
 import '../../models/vehicle.dart';
-import '../maintenance/maintenance_list_screen.dart'; // importáld
+import '../../core/database/database_helper.dart';
+import 'add_vehicle_screen.dart';
+import '../maintenance/maintenance_list_screen.dart';
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
@@ -21,7 +23,12 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   }
 
   Future<void> _loadVehicles() async {
-    final data = await DatabaseHelper.instance.getVehicles();
+    List<Map<String, dynamic>> data;
+    if (kIsWeb) {
+      data = await DatabaseHelper.instance.getTestVehicles();
+    } else {
+      data = await DatabaseHelper.instance.getVehicles();
+    }
     setState(() {
       vehicles = data.map((m) => Vehicle.fromMap(m)).toList();
       isLoading = false;
@@ -30,15 +37,19 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const accentOrange = Color.fromARGB(255, 255, 164, 0);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Járműveim'),
         backgroundColor: Colors.black,
-        foregroundColor: const Color.fromARGB(255, 255, 164, 0),
+        foregroundColor: accentOrange,
       ),
       backgroundColor: Colors.black,
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color.fromARGB(255,255,164,0)))
+          ? const Center(
+          child: CircularProgressIndicator(color: Color.fromARGB(255,255,164,0)))
+          : vehicles.isEmpty
+          ? const Center(child: Text('Nincs jármű.', style: TextStyle(color: Colors.orange)))
           : ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: vehicles.length,
@@ -54,7 +65,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   style: const TextStyle(color: Colors.orange)),
               trailing: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255,255,164,0),
+                  backgroundColor: accentOrange,
                   foregroundColor: Colors.black,
                 ),
                 child: const Text('Karbantartások'),
@@ -74,12 +85,15 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color.fromARGB(255,255,164,0),
+        backgroundColor: accentOrange,
         child: const Icon(Icons.add, color: Colors.black),
         onPressed: () async {
-          // AddVehicleScreen implementálva korábban
-          final result = await Navigator.of(context).pushNamed('/addVehicle');
-          if (result == true) _loadVehicles();
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AddVehicleScreen()),
+          );
+          if (result == true) {
+            _loadVehicles();
+          }
         },
       ),
     );

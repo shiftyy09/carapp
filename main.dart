@@ -1,6 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'screens/splash/splash_screen.dart';
-
 void main() {
   runApp(const CarMaintenanceApp());
 }

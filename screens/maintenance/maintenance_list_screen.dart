@@ -1,6 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../../core/database/database_helper.dart';
 import '../../models/maintenance_record.dart';
+import '../../core/database/database_helper.dart';
 import '../vehicles/add_service_screen.dart';
 
 class MaintenanceListScreen extends StatefulWidget {
@@ -27,7 +28,13 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
   }
 
   Future<void> _loadRecords() async {
-    final data = await DatabaseHelper.instance.getMaintenanceForVehicle(widget.vehicleId);
+    List<Map<String, dynamic>> data;
+    if (kIsWeb) {
+      // Tesztadat nincs, üres lista
+      data = [];
+    } else {
+      data = await DatabaseHelper.instance.getMaintenanceForVehicle(widget.vehicleId);
+    }
     setState(() {
       records = data.map((m) => MaintenanceRecord.fromMap(m)).toList();
       isLoading = false;
@@ -36,19 +43,19 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const accentOrange = Color.fromARGB(255, 255, 164, 0);
     return Scaffold(
       appBar: AppBar(
         title: Text('Karbantartás: ${widget.vehicleName}'),
         backgroundColor: Colors.black,
-        foregroundColor: const Color.fromARGB(255,255,164,0),
+        foregroundColor: accentOrange,
       ),
       backgroundColor: Colors.black,
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color.fromARGB(255,255,164,0)))
-          : records.isEmpty
           ? const Center(
-          child: Text('Nincs bejegyzés.',
-              style: TextStyle(color: Colors.orange)))
+          child: CircularProgressIndicator(color: Color.fromARGB(255,255,164,0)))
+          : records.isEmpty
+          ? const Center(child: Text('Nincs bejegyzés.', style: TextStyle(color: Colors.orange)))
           : ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: records.length,
@@ -58,7 +65,8 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
             color: Colors.grey[900],
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
-              title: Text(r.description, style: const TextStyle(color: Colors.white)),
+              title: Text(r.description,
+                  style: const TextStyle(color: Colors.white)),
               subtitle: Text(
                 '${r.date} • ${r.mileage} km\n'
                     'Munkadíj: ${r.laborCost.toStringAsFixed(0)} Ft • '
@@ -71,18 +79,15 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color.fromARGB(255,255,164,0),
+        backgroundColor: accentOrange,
         child: const Icon(Icons.add, color: Colors.black),
         onPressed: () async {
           final result = await Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => AddServiceScreen(
-                vehicleName: widget.vehicleName,
-              ),
+              builder: (_) => AddServiceScreen(vehicleName: widget.vehicleName),
             ),
           );
-          if (result != null) {
-            // mentsd az adatbázisba
+          if (result != null && !kIsWeb) {
             await DatabaseHelper.instance.createMaintenance({
               'vehicleId': widget.vehicleId,
               'date': result['date'],

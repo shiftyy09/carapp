@@ -1,120 +1,112 @@
 import 'package:flutter/material.dart';
+import '../../core/database/database_helper.dart';
 
 class AddVehicleScreen extends StatefulWidget {
   const AddVehicleScreen({super.key});
 
   @override
-  State<AddVehicleScreen> createState() => _AddVehicleScreenState();
+  _AddVehicleScreenState createState() => _AddVehicleScreenState();
 }
 
 class _AddVehicleScreenState extends State<AddVehicleScreen> {
   final _formKey = GlobalKey<FormState>();
+
   String make = '';
   String model = '';
-  int year = DateTime.now().year;
+  int? year;
   String licensePlate = '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Jármű hozzáadása'),
+        title: const Text('Új jármű hozzáadása'),
         backgroundColor: Colors.black,
         foregroundColor: const Color.fromARGB(255, 255, 164, 0),
       ),
       backgroundColor: Colors.black,
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
               TextFormField(
-                style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                  labelText: 'Gyártmány (pl. Opel)',
-                  labelStyle: TextStyle(color: Colors.orange),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
+                  labelText: 'Gyártó',
+                  labelStyle: TextStyle(color: Color.fromARGB(255, 255, 164, 0)),
+                  enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Color.fromARGB(255, 255, 164, 0)),
                   ),
                 ),
-                onChanged: (val) => setState(() => make = val),
-                validator: (val) => val == null || val.isEmpty ? 'Kötelező mező!' : null,
+                style: const TextStyle(color: Colors.white),
+                validator: (value) => (value == null || value.isEmpty) ? 'Add meg a gyártót' : null,
+                onSaved: (value) => make = value!,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                  labelText: 'Típus (pl. Astra)',
-                  labelStyle: TextStyle(color: Colors.orange),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
+                  labelText: 'Modell',
+                  labelStyle: TextStyle(color: Color.fromARGB(255, 255, 164, 0)),
+                  enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Color.fromARGB(255, 255, 164, 0)),
                   ),
                 ),
-                onChanged: (val) => setState(() => model = val),
-                validator: (val) => val == null || val.isEmpty ? 'Kötelező mező!' : null,
+                style: const TextStyle(color: Colors.white),
+                validator: (value) => (value == null || value.isEmpty) ? 'Add meg a modellt' : null,
+                onSaved: (value) => model = value!,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   labelText: 'Évjárat',
-                  labelStyle: TextStyle(color: Colors.orange),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
+                  labelStyle: TextStyle(color: Color.fromARGB(255, 255, 164, 0)),
+                  enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Color.fromARGB(255, 255, 164, 0)),
                   ),
                 ),
                 keyboardType: TextInputType.number,
-                initialValue: year.toString(),
-                onChanged: (val) => setState(() => year = int.tryParse(val) ?? DateTime.now().year),
-                validator: (val) => val == null || val.isEmpty ? 'Kötelező mező!' : null,
+                style: const TextStyle(color: Colors.white),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Add meg az évjáratot';
+                  if (int.tryParse(value) == null) return 'Érvényes számot adj meg';
+                  return null;
+                },
+                onSaved: (value) => year = int.parse(value!),
               ),
               const SizedBox(height: 16),
               TextFormField(
-                style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                  labelText: 'Rendszám (opcionális)',
-                  labelStyle: TextStyle(color: Colors.orange),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
+                  labelText: 'Rendszám (nem kötelező)',
+                  labelStyle: TextStyle(color: Color.fromARGB(255, 255, 164, 0)),
+                  enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Color.fromARGB(255, 255, 164, 0)),
                   ),
                 ),
-                onChanged: (val) => setState(() => licensePlate = val),
+                style: const TextStyle(color: Colors.white),
+                onSaved: (value) => licensePlate = value ?? '',
               ),
               const SizedBox(height: 32),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 255, 164, 0),
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    Navigator.pop(context, {
+                    _formKey.currentState!.save();
+                    await DatabaseHelper.instance.createVehicle({
                       'make': make,
                       'model': model,
                       'year': year,
-                      'licensePlate': licensePlate.isEmpty ? null : licensePlate,
+                      'licensePlate': licensePlate,
                     });
+                    Navigator.of(context).pop(true);
                   }
                 },
-                child: const Text('Mentés', style: TextStyle(fontSize: 16)),
+                child: const Text(
+                  'Mentés',
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
             ],
           ),
