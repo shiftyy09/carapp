@@ -10,7 +10,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> menuItems = [
+    final menuItems = [
       {
         'icon': Icons.directions_car,
         'title': 'Járműveim',
@@ -20,16 +20,6 @@ class HomeScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const VehicleListScreen()),
           );
         },
-      },
-      {
-        'icon': Icons.event_note,
-        'title': 'Szerviz időpontok',
-        'subtitle': 'Jövőbeli események',
-        'onTap': () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Szerviz időpontok fejlesztés alatt')),
-          );
-        }
       },
       {
         'icon': Icons.calculate_rounded,
@@ -44,10 +34,20 @@ class HomeScreen extends StatelessWidget {
       {
         'icon': Icons.build_circle,
         'title': 'Karbantartási emlékeztető',
-        'subtitle': 'Olajcsere, vezérlés és műszaki időben',
+        'subtitle': 'Olajcsere, vezérlés, műszaki stb.',
         'onTap': () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const MaintenanceReminderScreen()),
+          );
+        },
+      },
+      {
+        'icon': Icons.event_note,
+        'title': 'Szerviz időpontok',
+        'subtitle': 'Jövőbeli események',
+        'onTap': () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Szerviz időpontok fejlesztés alatt')),
           );
         },
       },
@@ -59,7 +59,7 @@ class HomeScreen extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Beállítások fejlesztés alatt')),
           );
-        }
+        },
       },
     ];
 
@@ -68,25 +68,19 @@ class HomeScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
         children: [
-          Center(
-            child: Image.asset(
-              'assets/images/olajfoltiras.png',
-              width: 250,
-              fit: BoxFit.contain,
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Center(
-            child: Text(
-              'Szerviz-napló',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 18,
-                fontStyle: FontStyle.italic,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 32.0),
+            child: Center(
+              child: Text(
+                'Szerviz-napló',
+                style: TextStyle(
+                  color: accentOrange,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 32),
           ...menuItems.map((item) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 24.0),
