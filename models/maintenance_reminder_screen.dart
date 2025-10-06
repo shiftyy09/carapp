@@ -1,150 +1,214 @@
 import 'package:flutter/material.dart';
-import 'car.dart';
-import 'maintenance_item.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class MaintenanceReminderScreen extends StatefulWidget {
-  const MaintenanceReminderScreen({super.key});
+class MaintenanceDataInputScreen extends StatefulWidget {
+  final int vehicleId;
+  final String vehicleName;
+
+  const MaintenanceDataInputScreen({
+    Key? key,
+    required this.vehicleId,
+    required this.vehicleName,
+  }) : super(key: key);
 
   @override
-  State<MaintenanceReminderScreen> createState() => _MaintenanceReminderScreenState();
+  _MaintenanceDataInputScreenState createState() => _MaintenanceDataInputScreenState();
 }
 
-class _MaintenanceReminderScreenState extends State<MaintenanceReminderScreen> {
-  List<Car> cars = [
-    Car(id: '1', name: 'Honda Civic', currentKm: 8000),
-    Car(id: '2', name: 'Toyota Corolla', currentKm: 12000),
-  ];
+class _MaintenanceDataInputScreenState extends State<MaintenanceDataInputScreen> {
+  final _formKey = GlobalKey<FormState>();
 
-  Map<String, List<MaintenanceItem>> carMaintenanceMap = {};
-
-  Car? selectedCar;
+  late TextEditingController _currentKmController;
+  late TextEditingController _oilKmController;
+  late TextEditingController _beltKmController;
+  late TextEditingController _brakeKmController;
+  DateTime? _oilDate;
+  DateTime? _beltDate;
+  DateTime? _brakeDate;
 
   @override
   void initState() {
     super.initState();
+    _currentKmController = TextEditingController();
+    _oilKmController = TextEditingController();
+    _beltKmController = TextEditingController();
+    _brakeKmController = TextEditingController();
+  }
 
-    for (var car in cars) {
-      carMaintenanceMap[car.id] = [
-        MaintenanceItem(id: 'oil', name: 'Olajcsere', intervalKm: 10000, lastServiceKm: 0),
-        MaintenanceItem(id: 'timing', name: 'Vezérlés csere', intervalKm: 80000, lastServiceKm: 0),
-        MaintenanceItem(id: 'coolant', name: 'Fagyálló csere', intervalKm: 100000, lastServiceKm: 0),
-        MaintenanceItem(id: 'brake_oil', name: 'Fékolaj csere', intervalKm: 30000, lastServiceKm: 0),
-        MaintenanceItem(id: 'mushaki', name: 'Műszaki vizsga', intervalKm: 40000, lastServiceKm: 0),
-      ];
+  @override
+  void dispose() {
+    _currentKmController.dispose();
+    _oilKmController.dispose();
+    _beltKmController.dispose();
+    _brakeKmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate(BuildContext context, DateTime? initial, ValueChanged<DateTime> onPicked) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: now,
+    );
+    if (picked != null) onPicked(picked);
+  }
+
+  Future<void> _saveData() async {
+    if (!_formKey.currentState!.validate()) return;
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${widget.vehicleId}_';
+
+    final currentKm = double.parse(_currentKmController.text);
+    final oilKm = double.parse(_oilKmController.text);
+    final beltKm = double.parse(_beltKmController.text);
+    final brakeKm = double.parse(_brakeKmController.text);
+
+    await prefs.setDouble('${key}currentKm', currentKm);
+    await prefs.setDouble('${key}oilChangeKm', oilKm);
+    await prefs.setDouble('${key}beltChangeKm', beltKm);
+    await prefs.setDouble('${key}brakeFluidKm', brakeKm);
+
+    if (_oilDate != null) {
+      await prefs.setString('${key}oilChangeDate', _oilDate!.toIso8601String());
     }
-  }
+    if (_beltDate != null) {
+      await prefs.setString('${key}beltChangeDate', _beltDate!.toIso8601String());
+    }
+    if (_brakeDate != null) {
+      await prefs.setString('${key}brakeFluidDate', _brakeDate!.toIso8601String());
+    }
 
-  double weeklyKmEstimate(Car car) {
-    // Egyszerű becslés, ha kell a jövőben bővíthető AI vagy History alapján
-    return 300; // például 300 km/hét
-  }
+    // DEBUG prints
+    print('⚙️ Saved currentKm: ${prefs.getDouble('${key}currentKm')}');
+    print('⚙️ Saved oilChangeDate: ${prefs.getString('${key}oilChangeDate')}');
 
-  int weeksToService(MaintenanceItem item, Car car) {
-    double remainingKm = (item.lastServiceKm + item.intervalKm) - car.currentKm;
-    double weeklyKm = weeklyKmEstimate(car);
-    if (weeklyKm <= 0) return -1;
-    return (remainingKm / weeklyKm).ceil();
+    Navigator.of(context).pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final maintenanceItems = selectedCar != null ? carMaintenanceMap[selectedCar!.id]! : [];
+    const accentOrange = Color.fromARGB(255, 255, 164, 0);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Karbantartási emlékeztető'),
+        title: Text('Adatbevitel: ${widget.vehicleName}'),
         backgroundColor: Colors.black,
-        foregroundColor: const Color.fromARGB(255, 255, 164, 0),
+        foregroundColor: accentOrange,
       ),
       backgroundColor: Colors.black,
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            DropdownButton<Car>(
-              hint: const Text('Válassz autót'),
-              value: selectedCar,
-              dropdownColor: Colors.grey[900],
-              style: const TextStyle(color: Colors.white),
-              onChanged: (car) {
-                setState(() {
-                  selectedCar = car;
-                });
-              },
-              items: cars.map((car) {
-                return DropdownMenuItem<Car>(
-                  value: car,
-                  child: Text(car.name),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-            if (selectedCar != null) ...[
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
               TextFormField(
-                initialValue: selectedCar!.currentKm.toString(),
-                keyboardType: TextInputType.number,
+                controller: _currentKmController,
+                decoration: const InputDecoration(
+                  labelText: 'Jelenlegi km',
+                  labelStyle: TextStyle(color: Colors.orange),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.orange),
+                  ),
+                ),
                 style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Jelenlegi km óra állás',
-                  labelStyle: const TextStyle(color: Color.fromARGB(255, 255, 164, 0)),
-                  enabledBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color.fromARGB(255, 255, 164, 0))),
-                ),
-                onChanged: (value) {
-                  final km = double.tryParse(value) ?? selectedCar!.currentKm;
-                  setState(() {
-                    selectedCar!.currentKm = km;
-                  });
-                },
+                keyboardType: TextInputType.number,
+                validator: (v) => v == null || v.isEmpty ? 'Kérem a km-et' : null,
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: maintenanceItems.length,
-                  itemBuilder: (context, index) {
-                    final item = maintenanceItems[index];
-                    final remainingKm = (item.lastServiceKm + item.intervalKm) - selectedCar!.currentKm;
-                    final weeks = weeksToService(item, selectedCar!);
-                    Color statusColor;
-                    if (remainingKm <= 1000) {
-                      statusColor = Colors.red;
-                    } else if (remainingKm <= 3000) {
-                      statusColor = Colors.orange;
-                    } else if (remainingKm <= 5000) {
-                      statusColor = Colors.yellow;
-                    } else {
-                      statusColor = Colors.green;
-                    }
-                    return Card(
-                      color: Colors.grey[900],
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: statusColor,
-                          child: Text(remainingKm > 0 ? remainingKm.toStringAsFixed(0) : '!', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                        ),
-                        title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Hátralevő: ${remainingKm > 0 ? remainingKm.toStringAsFixed(0) + " km" : "Esedékes!"}', style: TextStyle(color: statusColor)),
-                            if (weeks > 0) Text('Becsült idő: $weeks hét', style: const TextStyle(color: Colors.grey)),
-                          ],
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.check_circle, color: Color.fromARGB(255, 255, 164, 0)),
-                          onPressed: () {
-                            setState(() {
-                              item.lastServiceKm = selectedCar!.currentKm;
-                            });
-                          },
-                        ),
-                      ),
-                    );
-                  },
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _oilKmController,
+                decoration: const InputDecoration(
+                  labelText: 'Utolsó olajcsere km',
+                  labelStyle: TextStyle(color: Colors.orange),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.orange),
+                  ),
                 ),
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.number,
+                validator: (v) => v == null || v.isEmpty ? 'Kérem az értéket' : null,
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Olajcsere dátuma', style: TextStyle(color: Colors.white)),
+                subtitle: Text(
+                  _oilDate != null ? _oilDate!.toLocal().toString().split(' ')[0] : 'Nincs kiválasztva',
+                  style: const TextStyle(color: Colors.orange),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today, color: Colors.orange),
+                  onPressed: () => _pickDate(context, _oilDate, (d) => setState(() => _oilDate = d)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _beltKmController,
+                decoration: const InputDecoration(
+                  labelText: 'Utolsó vezérléscsere km',
+                  labelStyle: TextStyle(color: Colors.orange),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.orange),
+                  ),
+                ),
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.number,
+                validator: (v) => v == null || v.isEmpty ? 'Kérem az értéket' : null,
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Vezérléscsere dátuma', style: TextStyle(color: Colors.white)),
+                subtitle: Text(
+                  _beltDate != null ? _beltDate!.toLocal().toString().split(' ')[0] : 'Nincs kiválasztva',
+                  style: const TextStyle(color: Colors.orange),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today, color: Colors.orange),
+                  onPressed: () => _pickDate(context, _beltDate, (d) => setState(() => _beltDate = d)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _brakeKmController,
+                decoration: const InputDecoration(
+                  labelText: 'Utolsó fékfolyadék-csere km',
+                  labelStyle: TextStyle(color: Colors.orange),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.orange),
+                  ),
+                ),
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.number,
+                validator: (v) => v == null || v.isEmpty ? 'Kérem az értéket' : null,
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Fékfolyadék csere dátuma', style: TextStyle(color: Colors.white)),
+                subtitle: Text(
+                  _brakeDate != null ? _brakeDate!.toLocal().toString().split(' ')[0] : 'Nincs kiválasztva',
+                  style: const TextStyle(color: Colors.orange),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today, color: Colors.orange),
+                  onPressed: () => _pickDate(context, _brakeDate, (d) => setState(() => _brakeDate = d)),
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentOrange,
+                  foregroundColor: Colors.black,
+                ),
+                onPressed: _saveData,
+                child: const Text('Mentés'),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -5,12 +5,10 @@ import 'package:path/path.dart';
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _db;
-
   DatabaseHelper._init();
 
   Future<Database> get database async {
     if (kIsWeb) {
-      // Weben tesztadatokat használunk, nem inicializáljuk a sqflite-et
       throw UnsupportedError('Use getTestVehicles() on web');
     }
     if (_db != null) return _db!;
@@ -57,8 +55,6 @@ class DatabaseHelper {
     ''');
   }
 
-  // Mobilos CRUD
-
   Future<int> createVehicle(Map<String, dynamic> v) async {
     final db = await database;
     return await db.insert('vehicles', v);
@@ -67,6 +63,14 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getVehicles() async {
     final db = await database;
     return await db.query('vehicles');
+  }
+
+  Future<int> deleteVehicle(int id) async {
+    final db = await database;
+    // Először törlünk minden szerviz rekordot, amely a járműhöz tartozik
+    await db.delete('maintenance_records', where: 'vehicleId = ?', whereArgs: [id]);
+    // Majd maga a jármű törlése
+    return await db.delete('vehicles', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<int> createMaintenance(Map<String, dynamic> m) async {
@@ -88,8 +92,6 @@ class DatabaseHelper {
     final db = await database;
     await db.close();
   }
-
-  // Webes tesztadatok
 
   Future<List<Map<String, dynamic>>> getTestVehicles() async {
     return [

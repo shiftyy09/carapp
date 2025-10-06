@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../vehicles/vehicle_list_screen.dart';
 import '../consumption/consumption_calculator_screen.dart';
 import '../maintenance/maintenance_reminder_screen.dart';
+import '../maintenance/maintenance_data_input_screen.dart'; // az adatbekérő képernyő importja
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
   static const Color accentOrange = Color.fromARGB(255, 255, 164, 0);
 
   @override
@@ -17,7 +18,7 @@ class HomeScreen extends StatelessWidget {
         'subtitle': 'Autók listája',
         'onTap': () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const VehicleListScreen()),
+            MaterialPageRoute(builder: (_) => VehicleListScreen()),
           );
         },
       },
@@ -35,10 +36,15 @@ class HomeScreen extends StatelessWidget {
         'icon': Icons.build_circle,
         'title': 'Karbantartási emlékeztető',
         'subtitle': 'Olajcsere, vezérlés, műszaki stb.',
-        'onTap': () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MaintenanceReminderScreen()),
+        'onTap': () async {
+          // Jármű kiválasztása előtte
+          final selectedVehicle = await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => VehicleListScreen(selectionMode: true)),
           );
+
+          if (selectedVehicle != null) {
+            await _navigateToMaintenance(context, selectedVehicle);
+          }
         },
       },
       {
@@ -85,7 +91,7 @@ class HomeScreen extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(bottom: 24.0),
               child: Card(
-                color: Colors.grey[900],
+                color: Colors.grey[900] ?? const Color(0xFF212121),
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -121,5 +127,45 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _navigateToMaintenance(BuildContext context, dynamic selectedVehicle) async {
+    final vehicleId = selectedVehicle.id as int;
+    final vehicleName = '${selectedVehicle.make} ${selectedVehicle.model}';
+
+    final prefs = await SharedPreferences.getInstance();
+    final keyCurrentKm = '${vehicleId}_currentKm';
+    final hasData = prefs.containsKey(keyCurrentKm) && (prefs.getDouble(keyCurrentKm) ?? 0) > 0;
+
+    if (!hasData) {
+      final result = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => MaintenanceDataInputScreen(
+            vehicleId: vehicleId,
+            vehicleName: vehicleName,
+          ),
+        ),
+      );
+
+      if (result == true) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MaintenanceReminderScreen(
+              vehicleId: vehicleId,
+              vehicleName: vehicleName,
+            ),
+          ),
+        );
+      }
+    } else {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => MaintenanceReminderScreen(
+            vehicleId: vehicleId,
+            vehicleName: vehicleName,
+          ),
+        ),
+      );
+    }
   }
 }
