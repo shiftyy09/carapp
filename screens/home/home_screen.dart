@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../vehicles/vehicle_list_screen.dart';
 import '../consumption/consumption_calculator_screen.dart';
 import '../maintenance/maintenance_reminder_screen.dart';
-import '../maintenance/maintenance_data_input_screen.dart'; // az adatbekérő képernyő importja
+import '../maintenance/maintenance_data_input_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
